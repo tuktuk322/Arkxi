@@ -11,9 +11,15 @@ local fillFrame = player:WaitForChild("PlayerGui"):WaitForChild("Main"):WaitForC
 local V4Enabled = false
 local FruitCheck = false
 local TeleportFruit = false
+local GoToFruitActive = false
+local AutoRandomFruit = false
 local sizeConn 
 local fruitLoop = nil
 local teleportLoop = nil
+local goToFruitRunning = false
+local autoFruitRunning = false
+local fruitTween = nil
+local CommF_ = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_")
 
 -- =========================
 -- Theme Data & Functions
@@ -253,6 +259,85 @@ function UiSettingsModule:SetTeleportFruit(state)
     TeleportFruit = state
     if state then
         startTeleportLoop()
+    end
+end
+
+-- =========================
+-- Go To Fruit (Tween to nearest fruit)
+-- =========================
+local function startGoToFruitLoop()
+    if goToFruitRunning then return end
+    goToFruitRunning = true
+    task.spawn(function()
+        while goToFruitRunning do
+            if GoToFruitActive then
+                pcall(function()
+                    local fruit = nil
+                    for _, v in pairs(workspace:GetChildren()) do
+                        if v:IsA("Tool") or (v:IsA("Model") and v:FindFirstChild("Handle") and v.Name:lower():find("fruit")) then
+                            fruit = v
+                            break
+                        end
+                    end
+                    if fruit and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local handle = fruit:FindFirstChild("Handle") or fruit
+                        local playerHrp = player.Character.HumanoidRootPart
+                        local dist = (playerHrp.Position - handle.Position).Magnitude
+                        if dist > 10 then
+                            if fruitTween then pcall(function() fruitTween:Cancel() end) end
+                            fruitTween = TweenService:Create(playerHrp, TweenInfo.new(dist / 400, Enum.EasingStyle.Linear), {CFrame = handle.CFrame * CFrame.new(0, 3, 0)})
+                            fruitTween:Play()
+                            fruitTween.Completed:Wait()
+                            fruitTween = nil
+                        end
+                    end
+                end)
+                task.wait()
+            else
+                if fruitTween then pcall(function() fruitTween:Cancel() end) fruitTween = nil end
+                task.wait(0.5)
+            end
+        end
+    end)
+end
+
+function UiSettingsModule:SetGoToFruit(state)
+    GoToFruitActive = state
+    if state then
+        startGoToFruitLoop()
+    else
+        goToFruitRunning = false
+        if fruitTween then pcall(function() fruitTween:Cancel() end) fruitTween = nil end
+    end
+end
+
+-- =========================
+-- Auto Random Fruit (Buy from Cousin)
+-- =========================
+local function startAutoRandomFruitLoop()
+    if autoFruitRunning then return end
+    autoFruitRunning = true
+    task.spawn(function()
+        while autoFruitRunning do
+            task.wait(2)
+            if AutoRandomFruit and CommF_ then
+                pcall(function()
+                    for i = 1, 3 do
+                        CommF_:InvokeServer("Cousin", "Buy")
+                        task.wait(0.5)
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+function UiSettingsModule:SetAutoRandomFruit(state)
+    AutoRandomFruit = state
+    if state then
+        startAutoRandomFruitLoop()
+    else
+        autoFruitRunning = false
     end
 end
 

@@ -22,19 +22,43 @@ local GunValidator = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Val
 
 local ScreenGui
 local FpsPingLabel
+local Camera = Workspace.CurrentCamera
+local TweenService = game:GetService("TweenService")
+
 local FpsBoostEnabled = false
 local InfiniteEnergy = false
 local FastAttackEnabled = false
 local WalkWaterEnabled = false
 local fog = false
 local Lava = false
+local AntiStunEnabled = false
+local DashEnabled = false
+local DashPower = 100
+local BoatSpeedEnabled = false
+local BoatFlyEnabled = false
+local BoatSpeedValue = 2
+local BoatFlyHeight = 50
+local EscapeActive = false
+local EscapeHealth = 5000
 
 local fastConn
 local energyConnection
 local fpsBoostConn
+local antiStunConn
+local waterWalkConn
+local boatConn
 
 local savedSettings = {}
 local connections = {}
+
+-- Water Walk invisible platform
+local waterPlatform = Instance.new("Part")
+waterPlatform.Name = "Arxki_WaterPlatform"
+waterPlatform.Size = Vector3.new(20, 1, 20)
+waterPlatform.Transparency = 1
+waterPlatform.Anchored = true
+waterPlatform.CanCollide = false
+waterPlatform.Parent = Workspace
 
 local function createGui()
 	if ScreenGui then return end 
@@ -507,11 +531,144 @@ end
 
 function StuffsModule:SetWalkWater(state)
     WalkWaterEnabled = state
-    if WalkWaterEnabled then
-        waterPart.Size = Vector3.new(1000,110,1000)
+    if state then
+        if waterWalkConn then waterWalkConn:Disconnect() waterWalkConn = nil end
+        waterWalkConn = RunService.RenderStepped:Connect(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChild("Humanoid")
+            if not root or not hum then return end
+            if WalkWaterEnabled then
+                waterPlatform.CanCollide = true
+                waterPlatform.Position = Vector3.new(root.Position.X, 0.8, root.Position.Z)
+            else
+                waterPlatform.CanCollide = false
+            end
+            if EscapeActive and hum and hum.Health <= EscapeHealth and hum.Health > 0 then
+                root.CFrame = root.CFrame * CFrame.new(0, 9000, 0)
+            end
+        end)
     else
-        waterPart.Size = Vector3.new(1000,80,1000)
+        waterPlatform.CanCollide = false
+        if waterWalkConn then waterWalkConn:Disconnect() waterWalkConn = nil end
     end
+end
+
+-- =========================
+-- Anti-Stun System
+-- =========================
+function StuffsModule:SetAntiStun(state)
+    AntiStunEnabled = state
+    if state then
+        if antiStunConn then antiStunConn:Disconnect() antiStunConn = nil end
+        antiStunConn = RunService.RenderStepped:Connect(function()
+            if not AntiStunEnabled then return end
+            local char = LocalPlayer.Character
+            if not char then return end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChild("Humanoid")
+            if not root or not hum then return end
+            if hum.PlatformStand then hum.PlatformStand = false end
+            if hum.Sit then hum.Sit = false end
+            local stunValue = char:FindFirstChild("Stun")
+            local busyValue = char:FindFirstChild("Busy")
+            if stunValue and stunValue.Value > 0 then stunValue.Value = 0 end
+            if busyValue and busyValue.Value then busyValue.Value = false end
+            for _, v in pairs(root:GetChildren()) do
+                if v:IsA("BodyVelocity") or v:IsA("BodyPosition") or v:IsA("BodyGyro") then
+                    v:Destroy()
+                end
+            end
+        end)
+    else
+        if antiStunConn then antiStunConn:Disconnect() antiStunConn = nil end
+    end
+end
+
+-- =========================
+-- Dash System
+-- =========================
+function StuffsModule:SetDash(state)
+    DashEnabled = state
+end
+
+function StuffsModule:SetDashPower(power)
+    local num = tonumber(power)
+    if num then DashPower = num end
+end
+
+function StuffsModule:DoDash()
+    if not DashEnabled then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChild("Humanoid")
+    if not hrp or not hum then return end
+    local dir = hum.MoveDirection.Magnitude > 0 and hum.MoveDirection or Camera.CFrame.LookVector
+    dir = Vector3.new(dir.X, 0, dir.Z).Unit
+    hrp.Velocity = dir * DashPower
+end
+
+-- =========================
+-- Boat Speed & Fly
+-- =========================
+function StuffsModule:SetBoatSpeed(state)
+    BoatSpeedEnabled = state
+    if state and not boatConn then
+        boatConn = RunService.Heartbeat:Connect(function()
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("Humanoid") then
+                    local seat = char.Humanoid.SeatPart
+                    if seat and seat:IsA("VehicleSeat") then
+                        if BoatFlyEnabled then
+                            seat.Velocity = Vector3.new(seat.Velocity.X, 0, seat.Velocity.Z)
+                            seat.CFrame = CFrame.new(seat.Position.X, BoatFlyHeight, seat.Position.Z) * seat.CFrame.Rotation
+                        end
+                        if BoatSpeedEnabled and seat.Throttle ~= 0 then
+                            seat.CFrame = seat.CFrame * CFrame.new(0, 0, -seat.Throttle * BoatSpeedValue)
+                        end
+                    end
+                end
+            end)
+        end)
+    elseif not state and not BoatFlyEnabled then
+        if boatConn then boatConn:Disconnect() boatConn = nil end
+    end
+end
+
+function StuffsModule:SetBoatFly(state)
+    BoatFlyEnabled = state
+    if state and not boatConn then
+        StuffsModule:SetBoatSpeed(false)
+        BoatSpeedEnabled = false
+        StuffsModule:SetBoatSpeed(true)
+    elseif not state and not BoatSpeedEnabled then
+        if boatConn then boatConn:Disconnect() boatConn = nil end
+    end
+end
+
+function StuffsModule:SetBoatSpeedValue(val)
+    local num = tonumber(val)
+    if num then BoatSpeedValue = num end
+end
+
+function StuffsModule:SetBoatFlyHeight(val)
+    local num = tonumber(val)
+    if num then BoatFlyHeight = num end
+end
+
+-- =========================
+-- Sky Escape System
+-- =========================
+function StuffsModule:SetEscape(state)
+    EscapeActive = state
+end
+
+function StuffsModule:SetEscapeHealth(val)
+    local num = tonumber(val)
+    if num then EscapeHealth = num end
 end
 
 function StuffsModule:SetPingsOrFps(state)
