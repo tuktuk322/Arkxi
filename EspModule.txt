@@ -25,6 +25,7 @@ local currentTool = nil
 local ESPs = {}
 local cooldownTime = 31
 local v3Loop = nil
+local busoConn = nil
 
 -- =========================
 -- Team Check
@@ -336,9 +337,16 @@ end
 function ESPModule:SetBuso(state)
     BusoEnabled = state
     if state then
-	    if not game:GetService("Players").LocalPlayer.Character:FindFirstChild("HasBuso") then
-	        pcall(function() CommF:InvokeServer("Buso") end)
-		end
+        if busoConn then busoConn:Disconnect() busoConn = nil end
+        busoConn = RunService.Heartbeat:Connect(function()
+            if not BusoEnabled then return end
+            local character = player.Character
+            if character and not character:FindFirstChild("HasBuso") then
+                pcall(function() CommF:InvokeServer("Buso") end)
+            end
+        end)
+    else
+        if busoConn then busoConn:Disconnect() busoConn = nil end
     end
 end
 

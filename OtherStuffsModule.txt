@@ -241,6 +241,60 @@ function OthersStuffsModule:ApplySettings(Settings, Modules, Toggles)
 	        end
 	    end
 	end
+
+	-- V2 Features
+	if Settings["AntiStun"] ~= nil then
+	    Modules.Stuffs:SetAntiStun(Settings["AntiStun"])
+	    if Toggles.AntiStun then Toggles.AntiStun:UpdateToggle(nil, Settings["AntiStun"]) end
+	end
+	if Settings["Dash"] ~= nil then
+	    Modules.Stuffs:SetDash(Settings["Dash"])
+	    if Toggles.Dash then Toggles.Dash:UpdateToggle(nil, Settings["Dash"]) end
+	end
+	if Settings["DashPower"] then
+	    Modules.Stuffs:SetDashPower(Settings["DashPower"])
+	end
+	if Settings["BoatSpeed"] ~= nil then
+	    Modules.Stuffs:SetBoatSpeed(Settings["BoatSpeed"])
+	    if Toggles.BoatSpeed then Toggles.BoatSpeed:UpdateToggle(nil, Settings["BoatSpeed"]) end
+	end
+	if Settings["BoatFly"] ~= nil then
+	    Modules.Stuffs:SetBoatFly(Settings["BoatFly"])
+	    if Toggles.BoatFly then Toggles.BoatFly:UpdateToggle(nil, Settings["BoatFly"]) end
+	end
+	if Settings["BoatSpeedValue"] then
+	    Modules.Stuffs:SetBoatSpeedValue(Settings["BoatSpeedValue"])
+	end
+	if Settings["BoatFlyHeight"] then
+	    Modules.Stuffs:SetBoatFlyHeight(Settings["BoatFlyHeight"])
+	end
+	if Settings["Escape"] ~= nil then
+	    Modules.Stuffs:SetEscape(Settings["Escape"])
+	    if Toggles.Escape then Toggles.Escape:UpdateToggle(nil, Settings["Escape"]) end
+	end
+	if Settings["EscapeHealth"] then
+	    Modules.Stuffs:SetEscapeHealth(Settings["EscapeHealth"])
+	end
+	if Settings["GoToFruit"] ~= nil then
+	    Modules.Ui:SetGoToFruit(Settings["GoToFruit"])
+	    if Toggles.GoToFruit then Toggles.GoToFruit:UpdateToggle(nil, Settings["GoToFruit"]) end
+	end
+	if Settings["AutoRandomFruit"] ~= nil then
+	    Modules.Ui:SetAutoRandomFruit(Settings["AutoRandomFruit"])
+	    if Toggles.AutoRandomFruit then Toggles.AutoRandomFruit:UpdateToggle(nil, Settings["AutoRandomFruit"]) end
+	end
+	if Settings["Opponent"] ~= nil then
+	    if Modules.Zskill then Modules.Zskill:SetInfo(Settings["Opponent"]) end
+	    if Toggles.Opponent then Toggles.Opponent:UpdateToggle(nil, Settings["Opponent"]) end
+	end
+	if Settings["AimlockPlayersMiniToggleNPC"] ~= nil then
+	    Modules.Aimlock:SetMiniToggleNpcAimlock(Settings["AimlockPlayersMiniToggleNPC"])
+	    if Toggles.AimlockPlayersMiniToggleNPC then Toggles.AimlockPlayersMiniToggleNPC:UpdateToggle(nil, Settings["AimlockPlayersMiniToggleNPC"]) end
+	end
+	if Settings["Prediction"] ~= nil then
+	    Modules.Aimlock:SetPrediction(Settings["Prediction"])
+	    if Toggles.Prediction then Toggles.Prediction:UpdateToggle(nil, Settings["Prediction"]) end
+	end
 end
 
 local FruitsToCheck = {
